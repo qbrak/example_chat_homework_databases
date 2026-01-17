@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src http://localhost:8000">
+    <title>System Zarządzania Więzieniem</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h1>🔒 Więzienie</h1>
+                <p>System Zarządzania</p>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-page="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span>Panel Główny</span>
+                </li>
+                <li class="nav-item" data-page="prisoners">
+                    <span class="nav-icon">👤</span>
+                    <span>Więźniowie</span>
+                </li>
+                <li class="nav-item" data-page="cells">
+                    <span class="nav-icon">🚪</span>
+                    <span>Cele</span>
+                </li>
+                <li class="nav-item" data-page="staff">
+                    <span class="nav-icon">👮</span>
+                    <span>Personel</span>
+                </li>
+                <li class="nav-item" data-page="visits">
+                    <span class="nav-icon">🤝</span>
+                    <span>Wizyty</span>
+                </li>
+                <li class="nav-item" data-page="programs">
+                    <span class="nav-icon">📚</span>
+                    <span>Programy</span>
+                </li>
+                <li class="nav-item" data-page="incidents">
+                    <span class="nav-icon">⚠️</span>
+                    <span>Incydenty</span>
+                </li>
+                <li class="nav-item" data-page="reports">
+                    <span class="nav-icon">📈</span>
+                    <span>Raporty</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <div id="page-dashboard" class="page active">
+                <div class="page-header">
+                    <h2>Panel Główny</h2>
+                </div>
+                <div class="stats-grid" id="dashboard-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">👤</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-prisoners">-</span>
+                            <span class="stat-label">Więźniowie</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🚪</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-cells">-</span>
+                            <span class="stat-label">Cele</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">👮</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-staff">-</span>
+                            <span class="stat-label">Personel</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🤝</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-visits">-</span>
+                            <span class="stat-label">Zaplanowane wizyty</span>
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="stat-incidents">-</span>
+                            <span class="stat-label">Nierozwiązane incydenty</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="dashboard-sections">
+                    <div class="dashboard-section">
+                        <h3>Więźniowie wg bloków</h3>
+                        <div id="prisoners-by-block" class="chart-container"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prisoners Page -->
+            <div id="page-prisoners" class="page">
+                <div class="page-header">
+                    <h2>Zarządzanie Więźniami</h2>
+                    <div class="page-actions">
+                        <input type="text" id="prisoner-search" placeholder="Szukaj..." class="search-input">
+                        <select id="prisoner-status-filter" class="filter-select">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="incarcerated">Osadzony</option>
+                            <option value="released">Zwolniony</option>
+                            <option value="transferred">Przeniesiony</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showPrisonerForm()">+ Dodaj więźnia</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="prisoners-table">
+                        <thead>
+                            <tr>
+                                <th>Nr więźnia</th>
+                                <th>Imię i nazwisko</th>
+                                <th>Data urodzenia</th>
+                                <th>Cela</th>
+                                <th>Blok</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="pagination" id="prisoners-pagination"></div>
+            </div>
+
+            <!-- Cells Page -->
+            <div id="page-cells" class="page">
+                <div class="page-header">
+                    <h2>Zarządzanie Celami</h2>
+                    <div class="page-actions">
+                        <select id="cell-block-filter" class="filter-select">
+                            <option value="">Wszystkie bloki</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showCellForm()">+ Dodaj celę</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="cells-table">
+                        <thead>
+                            <tr>
+                                <th>Kod celi</th>
+                                <th>Blok</th>
+                                <th>Piętro</th>
+                                <th>Typ</th>
+                                <th>Pojemność</th>
+                                <th>Zajętość</th>
+                                <th>Okno</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Staff Page -->
+            <div id="page-staff" class="page">
+                <div class="page-header">
+                    <h2>Zarządzanie Personelem</h2>
+                    <div class="page-actions">
+                        <select id="staff-role-filter" class="filter-select">
+                            <option value="">Wszystkie role</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showStaffForm()">+ Dodaj pracownika</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="staff-table">
+                        <thead>
+                            <tr>
+                                <th>ID pracownika</th>
+                                <th>Imię i nazwisko</th>
+                                <th>Rola</th>
+                                <th>Przypisany blok</th>
+                                <th>Email</th>
+                                <th>Telefon</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Visits Page -->
+            <div id="page-visits" class="page">
+                <div class="page-header">
+                    <h2>Zarządzanie Wizytami</h2>
+                    <div class="page-actions">
+                        <select id="visit-status-filter" class="filter-select">
+                            <option value="">Wszystkie statusy</option>
+                            <option value="scheduled">Zaplanowana</option>
+                            <option value="completed">Zakończona</option>
+                            <option value="cancelled">Anulowana</option>
+                            <option value="no_show">Nieobecność</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showVisitForm()">+ Zaplanuj wizytę</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="visits-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Godzina</th>
+                                <th>Więzień</th>
+                                <th>Odwiedzający</th>
+                                <th>Relacja</th>
+                                <th>Typ</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Programs Page -->
+            <div id="page-programs" class="page">
+                <div class="page-header">
+                    <h2>Programy Resocjalizacyjne</h2>
+                    <div class="page-actions">
+                        <button class="btn btn-primary" onclick="showProgramForm()">+ Dodaj program</button>
+                    </div>
+                </div>
+                <div class="programs-grid" id="programs-grid"></div>
+                <h3 style="margin-top: 2rem;">Zapisy na programy</h3>
+                <div class="table-container">
+                    <table class="data-table" id="enrollments-table">
+                        <thead>
+                            <tr>
+                                <th>Więzień</th>
+                                <th>Program</th>
+                                <th>Typ</th>
+                                <th>Data zapisu</th>
+                                <th>Status</th>
+                                <th>Ocena</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Incidents Page -->
+            <div id="page-incidents" class="page">
+                <div class="page-header">
+                    <h2>Incydenty</h2>
+                    <div class="page-actions">
+                        <select id="incident-severity-filter" class="filter-select">
+                            <option value="">Wszystkie poziomy</option>
+                            <option value="minor">Drobny</option>
+                            <option value="moderate">Umiarkowany</option>
+                            <option value="major">Poważny</option>
+                            <option value="critical">Krytyczny</option>
+                        </select>
+                        <select id="incident-resolved-filter" class="filter-select">
+                            <option value="">Wszystkie</option>
+                            <option value="false">Nierozwiązane</option>
+                            <option value="true">Rozwiązane</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="showIncidentForm()">+ Zgłoś incydent</button>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="data-table" id="incidents-table">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Więzień</th>
+                                <th>Typ</th>
+                                <th>Poziom</th>
+                                <th>Lokalizacja</th>
+                                <th>Zgłaszający</th>
+                                <th>Status</th>
+                                <th>Akcje</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Reports Page -->
+            <div id="page-reports" class="page">
+                <div class="page-header">
+                    <h2>Raporty i Widoki</h2>
+                </div>
+                <div class="reports-tabs">
+                    <button class="report-tab active" data-report="prisoner-details">Szczegóły więźniów</button>
+                    <button class="report-tab" data-report="cell-occupancy">Zajętość cel</button>
+                    <button class="report-tab" data-report="upcoming-releases">Nadchodzące zwolnienia</button>
+                    <button class="report-tab" data-report="block-summary">Podsumowanie bloków</button>
+                    <button class="report-tab" data-report="staff-overview">Przegląd personelu</button>
+                </div>
+                <div class="report-content">
+                    <div id="report-prisoner-details" class="report-view active">
+                        <h3>Widok: Szczegóły więźniów (v_prisoner_details)</h3>
+                        <p class="report-description">Połączenie danych więźnia z celą, blokiem i aktualnym wyrokiem.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="report-prisoner-details-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="report-cell-occupancy" class="report-view">
+                        <h3>Widok: Zajętość cel (v_cell_occupancy)</h3>
+                        <p class="report-description">Pojemność cel vs aktualna zajętość z podziałem na bloki.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="report-cell-occupancy-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="report-upcoming-releases" class="report-view">
+                        <h3>Widok: Nadchodzące zwolnienia (v_upcoming_releases)</h3>
+                        <p class="report-description">Więźniowie z datą zwolnienia w ciągu najbliższych 6 miesięcy.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="report-upcoming-releases-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="report-block-summary" class="report-view">
+                        <h3>Widok: Podsumowanie bloków (v_block_summary)</h3>
+                        <p class="report-description">Zagregowane statystyki dla każdego bloku więziennego.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="report-block-summary-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div id="report-staff-overview" class="report-view">
+                        <h3>Widok: Przegląd personelu (v_staff_overview)</h3>
+                        <p class="report-description">Przypisania i podstawowe informacje o personelu.</p>
+                        <div class="table-container">
+                            <table class="data-table" id="report-staff-overview-table">
+                                <thead></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for forms -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Formularz</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Dynamic form content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast-container"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
