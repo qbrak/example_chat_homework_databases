@@ -1,4 +1,12 @@
-# Prison Management System
+# Test project chat's capabilities
+
+This was a test of how well Opus can do mostly by itself.
+
+The model used was Opus 4.5.
+The cost of the project in tokens was ~10$ to make the code, and ~$20 to review the code in a customer review loop (annotate -> fix -> annotate ... loop)
+The instructions were the instructions for the class project with some additional comments about the technology used.
+
+## Prison Management System
 
 A full-stack database application for managing prison operations, built as a project for the "Bazy Danych 2025" (Databases 2025) course.
 
