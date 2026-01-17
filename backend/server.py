@@ -3,27 +3,39 @@ Prison Management System - FastAPI Backend
 """
 
 from contextlib import asynccontextmanager
+import logging
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import os
 from typing import Optional
-import json
+
+logger = logging.getLogger(__name__)
 
 # Database connection settings
+DB_PASSWORD = os.getenv("DB_PASSWORD")
+if not DB_PASSWORD:
+    raise RuntimeError("DB_PASSWORD environment variable is required")
+
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "localhost"),
     "port": os.getenv("DB_PORT", "5432"),
     "database": os.getenv("DB_NAME", "prison_management"),
     "user": os.getenv("DB_USER", "prison_admin"),
-    "password": os.getenv("DB_PASSWORD", "prison_secure_pwd_2025"),
+    "password": DB_PASSWORD,
 }
 
 
 def get_db_connection():
     """Create a new database connection."""
     return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+
+
+def handle_db_error(e: Exception) -> HTTPException:
+    """Log database error and return sanitized HTTP exception."""
+    logger.error(f"Database error: {e}")
+    return HTTPException(status_code=400, detail="Database operation failed. Please check your input and try again.")
 
 
 @asynccontextmanager
@@ -48,9 +60,11 @@ app = FastAPI(
 )
 
 # CORS middleware for Electron frontend
+# In production, restrict origins to specific trusted domains
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -175,7 +189,7 @@ def create_prisoner(prisoner: dict):
         return new_prisoner
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -225,7 +239,7 @@ def update_prisoner(prisoner_id: int, prisoner: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -242,6 +256,9 @@ def delete_prisoner(prisoner_id: int):
             raise HTTPException(status_code=404, detail="Prisoner not found")
         conn.commit()
         return {"message": "Prisoner deleted", "id": prisoner_id}
+    except psycopg2.Error as e:
+        conn.rollback()
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -347,7 +364,7 @@ def create_cell(cell: dict):
         return new_cell
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -387,7 +404,7 @@ def update_cell(cell_id: int, cell: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -406,7 +423,7 @@ def delete_cell(cell_id: int):
         return {"message": "Cell deleted", "id": cell_id}
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -461,7 +478,7 @@ def create_cell_block(block: dict):
         return new_block
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -558,7 +575,7 @@ def create_staff(staff: dict):
         return new_staff
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -602,7 +619,7 @@ def update_staff(staff_id: int, staff: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -621,7 +638,7 @@ def delete_staff(staff_id: int):
         return {"message": "Staff member deleted", "id": staff_id}
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -711,7 +728,7 @@ def create_visit(visit: dict):
         return new_visit
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -755,7 +772,7 @@ def update_visit(visit_id: int, visit: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -772,6 +789,9 @@ def delete_visit(visit_id: int):
             raise HTTPException(status_code=404, detail="Visit not found")
         conn.commit()
         return {"message": "Visit deleted", "id": visit_id}
+    except psycopg2.Error as e:
+        conn.rollback()
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -835,7 +855,7 @@ def create_visitor(visitor: dict):
         return new_visitor
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -875,7 +895,7 @@ def update_visitor(visitor_id: int, visitor: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -894,7 +914,7 @@ def delete_visitor(visitor_id: int):
         return {"message": "Visitor deleted", "id": visitor_id}
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -965,7 +985,7 @@ def create_sentence(sentence: dict):
         return new_sentence
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -982,6 +1002,9 @@ def delete_sentence(sentence_id: int):
             raise HTTPException(status_code=404, detail="Sentence not found")
         conn.commit()
         return {"message": "Sentence deleted", "id": sentence_id}
+    except psycopg2.Error as e:
+        conn.rollback()
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1043,7 +1066,7 @@ def create_program(program: dict):
         return new_program
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1105,7 +1128,7 @@ def enroll_prisoner(enrollment: dict):
         return new_enrollment
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1141,7 +1164,7 @@ def update_enrollment(enrollment_id: int, enrollment: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1226,7 +1249,7 @@ def create_incident(incident: dict):
         return new_incident
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1270,7 +1293,7 @@ def update_incident(incident_id: int, incident: dict):
         return updated
     except psycopg2.Error as e:
         conn.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1287,6 +1310,9 @@ def delete_incident(incident_id: int):
             raise HTTPException(status_code=404, detail="Incident not found")
         conn.commit()
         return {"message": "Incident deleted", "id": incident_id}
+    except psycopg2.Error as e:
+        conn.rollback()
+        raise handle_db_error(e)
     finally:
         conn.close()
 
@@ -1302,7 +1328,7 @@ def get_prisoner_details_view(limit: int = Query(100, le=1000), offset: int = 0)
     conn = get_db_connection()
     try:
         cur = conn.cursor()
-        cur.execute(f"SELECT * FROM v_prisoner_details LIMIT {limit} OFFSET {offset}")
+        cur.execute("SELECT * FROM v_prisoner_details LIMIT %s OFFSET %s", (limit, offset))
         return cur.fetchall()
     finally:
         conn.close()
@@ -1448,10 +1474,13 @@ def health_check():
         conn.close()
         return {"status": "healthy", "database": "connected"}
     except Exception as e:
-        return {"status": "unhealthy", "database": str(e)}
+        logger.error(f"Health check failed: {e}")
+        return {"status": "unhealthy", "database": "unavailable"}
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    host = os.getenv("API_HOST", "127.0.0.1")
+    port = int(os.getenv("API_PORT", "8000"))
+    uvicorn.run(app, host=host, port=port)

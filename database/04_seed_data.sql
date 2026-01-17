@@ -1,6 +1,9 @@
 -- Prison Management Database Seed Data
 -- Realistic sample data for demonstration
 
+-- Wrap in transaction to ensure triggers are always re-enabled
+BEGIN;
+
 -- Temporarily disable triggers for bulk insert
 ALTER TABLE prisoners DISABLE TRIGGER trg_check_cell_capacity;
 ALTER TABLE visits DISABLE TRIGGER trg_check_visitor_blacklist;
@@ -480,3 +483,5 @@ INSERT INTO incidents (prisoner_id, reported_by_staff_id, incident_date, inciden
 ALTER TABLE prisoners ENABLE TRIGGER trg_check_cell_capacity;
 ALTER TABLE visits ENABLE TRIGGER trg_check_visitor_blacklist;
 
+-- Commit transaction (rollback on any error will restore trigger states)
+COMMIT;

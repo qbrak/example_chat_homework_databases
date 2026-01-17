@@ -18,6 +18,23 @@ let prisonersPagination = { limit: 20, offset: 0, total: 0 };
 // UTILITY FUNCTIONS
 // ============================================
 
+function escapeHtml(text) {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+}
+
+function escapeAttr(text) {
+    if (text === null || text === undefined) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 async function api(endpoint, options = {}) {
     try {
         const response = await fetch(`${API_URL}${endpoint}`, {
@@ -179,10 +196,10 @@ async function loadDashboard() {
 
         chartContainer.innerHTML = stats.prisoners_by_block.map(block => `
             <div class="block-bar">
-                <span class="block-name">${block.name}</span>
+                <span class="block-name">${escapeHtml(block.name)}</span>
                 <div class="block-bar-fill">
                     <div class="block-bar-value" style="width: ${(block.count / maxCount) * 100}%">
-                        ${block.count}
+                        ${escapeHtml(block.count)}
                     </div>
                 </div>
             </div>
@@ -222,16 +239,16 @@ function renderPrisoners() {
 
     tbody.innerHTML = prisoners.map(p => `
         <tr>
-            <td>${p.prisoner_number}</td>
-            <td>${p.first_name} ${p.last_name}</td>
+            <td>${escapeHtml(p.prisoner_number)}</td>
+            <td>${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</td>
             <td>${formatDate(p.date_of_birth)}</td>
-            <td>${p.cell_code || '-'}</td>
-            <td>${p.block_name || '-'}</td>
-            <td><span class="status-badge ${p.status}">${translateStatus(p.status)}</span></td>
+            <td>${escapeHtml(p.cell_code) || '-'}</td>
+            <td>${escapeHtml(p.block_name) || '-'}</td>
+            <td><span class="status-badge ${escapeHtml(p.status)}">${translateStatus(p.status)}</span></td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="viewPrisoner(${p.id})">Szczegóły</button>
-                <button class="btn btn-sm btn-secondary" onclick="editPrisoner(${p.id})">Edytuj</button>
-                <button class="btn btn-sm btn-danger" onclick="deletePrisoner(${p.id})">Usuń</button>
+                <button class="btn btn-sm btn-secondary" onclick="viewPrisoner(${parseInt(p.id)})">Szczegóły</button>
+                <button class="btn btn-sm btn-secondary" onclick="editPrisoner(${parseInt(p.id)})">Edytuj</button>
+                <button class="btn btn-sm btn-danger" onclick="deletePrisoner(${parseInt(p.id)})">Usuń</button>
             </td>
         </tr>
     `).join('');
@@ -287,7 +304,7 @@ async function showPrisonerForm(prisonerId = null) {
                 <div class="form-group">
                     <label class="form-label">Numer więźnia *</label>
                     <input type="text" class="form-input" name="prisoner_number" required
-                           value="${prisoner?.prisoner_number || ''}"
+                           value="${escapeAttr(prisoner?.prisoner_number || '')}"
                            placeholder="np. P2025-0001">
                 </div>
                 <div class="form-group">
@@ -302,18 +319,18 @@ async function showPrisonerForm(prisonerId = null) {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Imię *</label>
-                    <input type="text" class="form-input" name="first_name" required value="${prisoner?.first_name || ''}">
+                    <input type="text" class="form-input" name="first_name" required value="${escapeAttr(prisoner?.first_name || '')}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Nazwisko *</label>
-                    <input type="text" class="form-input" name="last_name" required value="${prisoner?.last_name || ''}">
+                    <input type="text" class="form-input" name="last_name" required value="${escapeAttr(prisoner?.last_name || '')}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Data urodzenia *</label>
                     <input type="date" class="form-input" name="date_of_birth" required
-                           value="${prisoner?.date_of_birth || ''}" max="${new Date(Date.now() - 18*365*24*60*60*1000).toISOString().split('T')[0]}">
+                           value="${escapeAttr(prisoner?.date_of_birth || '')}" max="${new Date(Date.now() - 18*365*24*60*60*1000).toISOString().split('T')[0]}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Płeć *</label>
@@ -327,7 +344,7 @@ async function showPrisonerForm(prisonerId = null) {
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Narodowość *</label>
-                    <input type="text" class="form-input" name="nationality" required value="${prisoner?.nationality || 'Polish'}">
+                    <input type="text" class="form-input" name="nationality" required value="${escapeAttr(prisoner?.nationality || 'Polish')}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Grupa krwi</label>
@@ -351,7 +368,7 @@ async function showPrisonerForm(prisonerId = null) {
                         <option value="">Brak przypisania</option>
                         ${cells.map(c => `
                             <option value="${c.id}" ${prisoner?.cell_id === c.id ? 'selected' : ''}>
-                                ${c.cell_code} (${c.block_name}) - ${c.current_occupancy}/${c.capacity}
+                                ${escapeHtml(c.cell_code)} (${escapeHtml(c.block_name)}) - ${c.current_occupancy}/${c.capacity}
                             </option>
                         `).join('')}
                     </select>
@@ -359,24 +376,24 @@ async function showPrisonerForm(prisonerId = null) {
                 <div class="form-group">
                     <label class="form-label">Data przyjęcia</label>
                     <input type="date" class="form-input" name="admission_date"
-                           value="${prisoner?.admission_date || new Date().toISOString().split('T')[0]}">
+                           value="${escapeAttr(prisoner?.admission_date || new Date().toISOString().split('T')[0])}">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label class="form-label">Kontakt alarmowy - imię</label>
                     <input type="text" class="form-input" name="emergency_contact_name"
-                           value="${prisoner?.emergency_contact_name || ''}">
+                           value="${escapeAttr(prisoner?.emergency_contact_name || '')}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Kontakt alarmowy - telefon</label>
                     <input type="text" class="form-input" name="emergency_contact_phone"
-                           value="${prisoner?.emergency_contact_phone || ''}">
+                           value="${escapeAttr(prisoner?.emergency_contact_phone || '')}">
                 </div>
             </div>
             <div class="form-group">
                 <label class="form-label">Notatki</label>
-                <textarea class="form-textarea" name="notes">${prisoner?.notes || ''}</textarea>
+                <textarea class="form-textarea" name="notes">${escapeHtml(prisoner?.notes || '')}</textarea>
             </div>
             <div class="form-actions">
                 <button type="button" class="btn btn-secondary" onclick="closeModal()">Anuluj</button>
@@ -430,23 +447,23 @@ async function viewPrisoner(id) {
         document.getElementById('modal-title').textContent = 'Szczegóły więźnia';
         document.getElementById('modal-body').innerHTML = `
             <div class="prisoner-details">
-                <h4>${history.prisoner.first_name} ${history.prisoner.last_name}</h4>
-                <p><strong>Numer:</strong> ${history.prisoner.prisoner_number}</p>
+                <h4>${escapeHtml(history.prisoner.first_name)} ${escapeHtml(history.prisoner.last_name)}</h4>
+                <p><strong>Numer:</strong> ${escapeHtml(history.prisoner.prisoner_number)}</p>
                 <p><strong>Status:</strong> ${translateStatus(history.prisoner.status)}</p>
                 <p><strong>Data przyjęcia:</strong> ${formatDate(history.prisoner.admission_date)}</p>
 
                 <h4 style="margin-top: 1rem;">Statystyki</h4>
-                <p><strong>Wyroki:</strong> ${history.statistics.total_sentences}</p>
-                <p><strong>Incydenty:</strong> ${history.statistics.total_incidents}</p>
-                <p><strong>Wizyty:</strong> ${history.statistics.total_visits}</p>
-                <p><strong>Ukończone programy:</strong> ${history.statistics.programs_completed}</p>
-                <p><strong>Dni w izolatce:</strong> ${history.statistics.total_solitary_days}</p>
+                <p><strong>Wyroki:</strong> ${escapeHtml(history.statistics.total_sentences)}</p>
+                <p><strong>Incydenty:</strong> ${escapeHtml(history.statistics.total_incidents)}</p>
+                <p><strong>Wizyty:</strong> ${escapeHtml(history.statistics.total_visits)}</p>
+                <p><strong>Ukończone programy:</strong> ${escapeHtml(history.statistics.programs_completed)}</p>
+                <p><strong>Dni w izolatce:</strong> ${escapeHtml(history.statistics.total_solitary_days)}</p>
 
                 ${history.sentences.length > 0 ? `
                     <h4 style="margin-top: 1rem;">Wyroki</h4>
                     <ul>
                         ${history.sentences.map(s => `
-                            <li>${s.crime_type} - ${s.sentence_years} lat ${s.sentence_months > 0 ? s.sentence_months + ' mies.' : ''}
+                            <li>${escapeHtml(s.crime_type)} - ${escapeHtml(s.sentence_years)} lat ${s.sentence_months > 0 ? escapeHtml(s.sentence_months) + ' mies.' : ''}
                                 (od ${formatDate(s.sentence_start_date)})</li>
                         `).join('')}
                     </ul>
@@ -524,7 +541,7 @@ async function loadCells() {
         cellBlocks = await api('/api/cell-blocks');
         const select = document.getElementById('cell-block-filter');
         select.innerHTML = '<option value="">Wszystkie bloki</option>' +
-            cellBlocks.map(b => `<option value="${b.id}">${b.name}</option>`).join('');
+            cellBlocks.map(b => `<option value="${b.id}">${escapeHtml(b.name)}</option>`).join('');
     }
 
     renderCells();
@@ -535,20 +552,20 @@ function renderCells() {
 
     tbody.innerHTML = cells.map(c => `
         <tr>
-            <td>${c.cell_code}</td>
-            <td>${c.block_name}</td>
-            <td>${c.floor_number}</td>
-            <td>${c.cell_type}</td>
-            <td>${c.capacity}</td>
+            <td>${escapeHtml(c.cell_code)}</td>
+            <td>${escapeHtml(c.block_name)}</td>
+            <td>${escapeHtml(c.floor_number)}</td>
+            <td>${escapeHtml(c.cell_type)}</td>
+            <td>${escapeHtml(c.capacity)}</td>
             <td>
                 <span class="status-badge ${c.current_occupancy >= c.capacity ? 'critical' : c.current_occupancy > 0 ? 'moderate' : 'minor'}">
-                    ${c.current_occupancy}/${c.capacity}
+                    ${escapeHtml(c.current_occupancy)}/${escapeHtml(c.capacity)}
                 </span>
             </td>
             <td>${c.has_window ? 'Tak' : 'Nie'}</td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="editCell(${c.id})">Edytuj</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteCell(${c.id})">Usuń</button>
+                <button class="btn btn-sm btn-secondary" onclick="editCell(${parseInt(c.id)})">Edytuj</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteCell(${parseInt(c.id)})">Usuń</button>
             </td>
         </tr>
     `).join('');
@@ -576,7 +593,7 @@ async function showCellForm(cellId = null) {
                     <label class="form-label">Blok *</label>
                     <select class="form-select" name="cell_block_id" required>
                         ${cellBlocks.map(b => `
-                            <option value="${b.id}" ${cell?.cell_block_id === b.id ? 'selected' : ''}>${b.name}</option>
+                            <option value="${b.id}" ${cell?.cell_block_id === b.id ? 'selected' : ''}>${escapeHtml(b.name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -679,7 +696,7 @@ async function loadStaff() {
         staffRoles = await api('/api/staff-roles');
         const select = document.getElementById('staff-role-filter');
         select.innerHTML = '<option value="">Wszystkie role</option>' +
-            staffRoles.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+            staffRoles.map(r => `<option value="${r.id}">${escapeHtml(r.name)}</option>`).join('');
     }
 
     renderStaff();
@@ -690,16 +707,16 @@ function renderStaff() {
 
     tbody.innerHTML = staff.map(s => `
         <tr>
-            <td>${s.employee_id}</td>
-            <td>${s.first_name} ${s.last_name}</td>
-            <td>${s.role_name}</td>
-            <td>${s.block_name || '-'}</td>
-            <td>${s.email || '-'}</td>
-            <td>${s.phone || '-'}</td>
+            <td>${escapeHtml(s.employee_id)}</td>
+            <td>${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</td>
+            <td>${escapeHtml(s.role_name)}</td>
+            <td>${escapeHtml(s.block_name) || '-'}</td>
+            <td>${escapeHtml(s.email) || '-'}</td>
+            <td>${escapeHtml(s.phone) || '-'}</td>
             <td><span class="status-badge ${s.is_active ? 'completed' : 'cancelled'}">${s.is_active ? 'Aktywny' : 'Nieaktywny'}</span></td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="editStaff(${s.id})">Edytuj</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteStaff(${s.id})">Usuń</button>
+                <button class="btn btn-sm btn-secondary" onclick="editStaff(${parseInt(s.id)})">Edytuj</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteStaff(${parseInt(s.id)})">Usuń</button>
             </td>
         </tr>
     `).join('');
@@ -728,7 +745,7 @@ async function showStaffForm(staffId = null) {
                     <label class="form-label">Rola *</label>
                     <select class="form-select" name="role_id" required>
                         ${staffRoles.map(r => `
-                            <option value="${r.id}" ${staffMember?.role_id === r.id ? 'selected' : ''}>${r.name}</option>
+                            <option value="${r.id}" ${staffMember?.role_id === r.id ? 'selected' : ''}>${escapeHtml(r.name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -773,7 +790,7 @@ async function showStaffForm(staffId = null) {
                     <select class="form-select" name="assigned_block_id">
                         <option value="">Brak</option>
                         ${cellBlocks.map(b => `
-                            <option value="${b.id}" ${staffMember?.assigned_block_id === b.id ? 'selected' : ''}>${b.name}</option>
+                            <option value="${b.id}" ${staffMember?.assigned_block_id === b.id ? 'selected' : ''}>${escapeHtml(b.name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -865,15 +882,15 @@ function renderVisits(visits) {
     tbody.innerHTML = visits.map(v => `
         <tr>
             <td>${formatDate(v.visit_date)}</td>
-            <td>${v.scheduled_start_time} - ${v.scheduled_end_time}</td>
-            <td>${v.prisoner_first_name} ${v.prisoner_last_name} (${v.prisoner_number})</td>
-            <td>${v.visitor_first_name} ${v.visitor_last_name}</td>
-            <td>${v.relationship_type}</td>
-            <td>${v.visit_type}</td>
-            <td><span class="status-badge ${v.status}">${translateStatus(v.status)}</span></td>
+            <td>${escapeHtml(v.scheduled_start_time)} - ${escapeHtml(v.scheduled_end_time)}</td>
+            <td>${escapeHtml(v.prisoner_first_name)} ${escapeHtml(v.prisoner_last_name)} (${escapeHtml(v.prisoner_number)})</td>
+            <td>${escapeHtml(v.visitor_first_name)} ${escapeHtml(v.visitor_last_name)}</td>
+            <td>${escapeHtml(v.relationship_type)}</td>
+            <td>${escapeHtml(v.visit_type)}</td>
+            <td><span class="status-badge ${escapeHtml(v.status)}">${translateStatus(v.status)}</span></td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="editVisit(${v.id})">Edytuj</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteVisit(${v.id})">Usuń</button>
+                <button class="btn btn-sm btn-secondary" onclick="editVisit(${parseInt(v.id)})">Edytuj</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteVisit(${parseInt(v.id)})">Usuń</button>
             </td>
         </tr>
     `).join('');
@@ -896,7 +913,7 @@ async function showVisitForm(visitId = null) {
                     <label class="form-label">Więzień *</label>
                     <select class="form-select" name="prisoner_id" required>
                         ${prisoners.map(p => `
-                            <option value="${p.id}">${p.prisoner_number} - ${p.first_name} ${p.last_name}</option>
+                            <option value="${p.id}">${escapeHtml(p.prisoner_number)} - ${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -904,7 +921,7 @@ async function showVisitForm(visitId = null) {
                     <label class="form-label">Odwiedzający *</label>
                     <select class="form-select" name="visitor_id" required>
                         ${visitors.map(v => `
-                            <option value="${v.id}">${v.first_name} ${v.last_name} (${v.relationship_type})</option>
+                            <option value="${v.id}">${escapeHtml(v.first_name)} ${escapeHtml(v.last_name)} (${escapeHtml(v.relationship_type)})</option>
                         `).join('')}
                     </select>
                 </div>
@@ -940,7 +957,7 @@ async function showVisitForm(visitId = null) {
                 <select class="form-select" name="approved_by_staff_id">
                     <option value="">Wybierz</option>
                     ${staff.map(s => `
-                        <option value="${s.id}">${s.first_name} ${s.last_name} (${s.role_name})</option>
+                        <option value="${s.id}">${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)} (${escapeHtml(s.role_name)})</option>
                     `).join('')}
                 </select>
             </div>
@@ -1019,12 +1036,12 @@ function renderPrograms(programs) {
 
     grid.innerHTML = programs.map(p => `
         <div class="program-card">
-            <h4>${p.name}</h4>
-            <div class="program-type">${p.type_name}</div>
+            <h4>${escapeHtml(p.name)}</h4>
+            <div class="program-type">${escapeHtml(p.type_name)}</div>
             <div class="program-info">
-                <span>Czas trwania: ${p.duration_weeks} tygodni</span>
-                <span>Zapisanych: ${p.current_enrolled}/${p.max_participants}</span>
-                ${p.instructor_first_name ? `<span>Instruktor: ${p.instructor_first_name} ${p.instructor_last_name}</span>` : ''}
+                <span>Czas trwania: ${escapeHtml(p.duration_weeks)} tygodni</span>
+                <span>Zapisanych: ${escapeHtml(p.current_enrolled)}/${escapeHtml(p.max_participants)}</span>
+                ${p.instructor_first_name ? `<span>Instruktor: ${escapeHtml(p.instructor_first_name)} ${escapeHtml(p.instructor_last_name)}</span>` : ''}
             </div>
         </div>
     `).join('');
@@ -1035,14 +1052,14 @@ function renderEnrollments(enrollments) {
 
     tbody.innerHTML = enrollments.map(e => `
         <tr>
-            <td>${e.first_name} ${e.last_name} (${e.prisoner_number})</td>
-            <td>${e.program_name}</td>
-            <td>${e.program_type}</td>
+            <td>${escapeHtml(e.first_name)} ${escapeHtml(e.last_name)} (${escapeHtml(e.prisoner_number)})</td>
+            <td>${escapeHtml(e.program_name)}</td>
+            <td>${escapeHtml(e.program_type)}</td>
             <td>${formatDate(e.enrollment_date)}</td>
-            <td><span class="status-badge ${e.status}">${translateStatus(e.status)}</span></td>
-            <td>${e.grade || '-'}</td>
+            <td><span class="status-badge ${escapeHtml(e.status)}">${translateStatus(e.status)}</span></td>
+            <td>${escapeHtml(e.grade) || '-'}</td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="editEnrollment(${e.id})">Edytuj</button>
+                <button class="btn btn-sm btn-secondary" onclick="editEnrollment(${parseInt(e.id)})">Edytuj</button>
             </td>
         </tr>
     `).join('');
@@ -1064,7 +1081,7 @@ async function showProgramForm() {
                 <div class="form-group">
                     <label class="form-label">Typ *</label>
                     <select class="form-select" name="program_type_id" required>
-                        ${programTypes.map(t => `<option value="${t.id}">${t.name}</option>`).join('')}
+                        ${programTypes.map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('')}
                     </select>
                 </div>
                 <div class="form-group">
@@ -1081,7 +1098,7 @@ async function showProgramForm() {
                     <label class="form-label">Instruktor</label>
                     <select class="form-select" name="instructor_staff_id">
                         <option value="">Brak</option>
-                        ${staff.map(s => `<option value="${s.id}">${s.first_name} ${s.last_name}</option>`).join('')}
+                        ${staff.map(s => `<option value="${s.id}">${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</option>`).join('')}
                     </select>
                 </div>
             </div>
@@ -1207,15 +1224,15 @@ function renderIncidents(incidents) {
     tbody.innerHTML = incidents.map(i => `
         <tr>
             <td>${formatDateTime(i.incident_date)}</td>
-            <td>${i.first_name} ${i.last_name} (${i.prisoner_number})</td>
+            <td>${escapeHtml(i.first_name)} ${escapeHtml(i.last_name)} (${escapeHtml(i.prisoner_number)})</td>
             <td>${translateIncidentType(i.incident_type)}</td>
-            <td><span class="status-badge ${i.severity}">${translateStatus(i.severity)}</span></td>
-            <td>${i.location || '-'}</td>
-            <td>${i.reporter_first_name ? `${i.reporter_first_name} ${i.reporter_last_name}` : '-'}</td>
+            <td><span class="status-badge ${escapeHtml(i.severity)}">${translateStatus(i.severity)}</span></td>
+            <td>${escapeHtml(i.location) || '-'}</td>
+            <td>${i.reporter_first_name ? `${escapeHtml(i.reporter_first_name)} ${escapeHtml(i.reporter_last_name)}` : '-'}</td>
             <td><span class="status-badge ${i.is_resolved ? 'resolved' : 'unresolved'}">${i.is_resolved ? 'Rozwiązany' : 'Nierozwiązany'}</span></td>
             <td class="action-buttons">
-                <button class="btn btn-sm btn-secondary" onclick="editIncident(${i.id})">Edytuj</button>
-                <button class="btn btn-sm btn-danger" onclick="deleteIncident(${i.id})">Usuń</button>
+                <button class="btn btn-sm btn-secondary" onclick="editIncident(${parseInt(i.id)})">Edytuj</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteIncident(${parseInt(i.id)})">Usuń</button>
             </td>
         </tr>
     `).join('');
@@ -1237,7 +1254,7 @@ async function showIncidentForm(incidentId = null) {
                     <label class="form-label">Więzień *</label>
                     <select class="form-select" name="prisoner_id" required>
                         ${prisoners.map(p => `
-                            <option value="${p.id}">${p.prisoner_number} - ${p.first_name} ${p.last_name}</option>
+                            <option value="${p.id}">${escapeHtml(p.prisoner_number)} - ${escapeHtml(p.first_name)} ${escapeHtml(p.last_name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -1246,7 +1263,7 @@ async function showIncidentForm(incidentId = null) {
                     <select class="form-select" name="reported_by_staff_id">
                         <option value="">Wybierz</option>
                         ${staff.map(s => `
-                            <option value="${s.id}">${s.first_name} ${s.last_name}</option>
+                            <option value="${s.id}">${escapeHtml(s.first_name)} ${escapeHtml(s.last_name)}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -1473,8 +1490,8 @@ function formatCellValue(value) {
     if (typeof value === 'string' && value.match(/^\d{4}-\d{2}-\d{2}/)) {
         return formatDate(value);
     }
-    if (typeof value === 'object') return JSON.stringify(value);
-    return value;
+    if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
+    return escapeHtml(value);
 }
 
 // ============================================
